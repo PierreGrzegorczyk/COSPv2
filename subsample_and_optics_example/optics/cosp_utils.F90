@@ -38,7 +38,39 @@ MODULE MOD_COSP_UTILS
 
 CONTAINS
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-!------------------- SUBROUTINE COSP_PRECIP_MXRATIO --------------
+!------------------- SUBROUTINE PREC_FLUX_TO_MR by pg for LMDZ--------------
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+!SUBROUTINE COSP_PRECIP_MXRATIO(Npoints,Nlevels,Ncolumns,p,T,prec_frac,prec_type,flux,vsnow,mxratio)
+!        
+!    ! Input arguments, (IN)
+!    integer,intent(in) :: Npoints,Nlevels,Ncolumns
+!    real(wp),intent(in),dimension(Npoints,Nlevels) :: p,T,flux
+!    real(wp),intent(in),dimension(Npoints,Ncolumns,Nlevels) :: prec_frac
+!    real(wp),intent(in) :: prec_type
+!    real(wp),intent(in) :: vsnow
+!    ! Input arguments, (OUT)
+!    real(wp),intent(out),dimension(Npoints,Ncolumns,Nlevels) :: mxratio
+!    real(wp) :: rho
+!
+!    mxratio = 0.0
+!
+!    do k=1,Nlevels
+!            do j=1,Ncolumns
+!                do i=1,Npoints
+!                    if ((prec_frac(i,j,k)==prec_type).or.(prec_frac(i,j,k)==3.)) then
+!                        rho = p(i,k)/(287.05_wp*T(i,k))
+!                        mxratio(i,j,k)=flux(i,k)/vsnow/rho
+!        !            if (i.eq.66) print *, 'new',k,j,mxratio(i,j,k), flux(i,k)
+!                    endif
+!                enddo
+!            enddo
+!        enddo    
+
+!END SUBROUTINE COSP_PRECIP_MXRATIO        
+        
+        
+        
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SUBROUTINE COSP_PRECIP_MXRATIO(Npoints,Nlevels,Ncolumns,p,T,prec_frac,prec_type, &
                           n_ax,n_bx,alpha_x,c_x,d_x,g_x,a_x,b_x,gamma1,gamma2,gamma3,gamma4, &
@@ -73,6 +105,8 @@ SUBROUTINE COSP_PRECIP_MXRATIO(Npoints,Nlevels,Ncolumns,p,T,prec_frac,prec_type,
                         rho = p(i,k)/(287.05_wp*T(i,k))
                         mxratio(i,j,k)=(flux(i,k)*((rho/rho0)**g_x)*sigma)**one_over_xip1
                         mxratio(i,j,k)=mxratio(i,j,k)/rho
+
+        !                if (i.eq.66) print *, 'old', k,j,mxratio(i,j,k),flux(i,k)
                         ! Compute effective radius
                         if ((reff(i,j,k) <= 0._wp).and.(flux(i,k) /= 0._wp)) then
                            lambda_x = (a_x*c_x*((rho0/rho)**g_x)*n_ax*gamma1/flux(i,k))**(1._wp/delta)

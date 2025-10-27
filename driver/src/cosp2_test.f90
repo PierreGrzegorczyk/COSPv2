@@ -63,7 +63,7 @@ program cosp2_test
   USE mod_rng,             ONLY: rng_state, init_rng
   USE mod_scops,           ONLY: scops
   USE mod_prec_scops,      ONLY: prec_scops
-  USE MOD_COSP_UTILS,      ONLY: cosp_precip_mxratio
+  USE MOD_COSP_UTILS,      ONLY: COSP_PRECIP_MXRATIO
   use cosp_optics,         ONLY: cosp_simulator_optics,lidar_optics,modis_optics,         &
                                  modis_optics_partition
   use mod_cosp_stats,      ONLY: COSP_CHANGE_VERTICAL_GRID
@@ -281,9 +281,10 @@ program cosp2_test
        gamma_2 = (/-1., -1.,      6.0,      6.0, -1., -1.,      6.0,      6.0,      6.0/),&
        gamma_3 = (/-1., -1.,      2.0,      2.0, -1., -1.,      2.0,      2.0,      2.0/),&
        gamma_4 = (/-1., -1.,      6.0,      6.0, -1., -1.,      6.0,      6.0,      6.0/)
-  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-  call cpu_time(driver_time(1))
+  !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% pg data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+   integer :: jsel
+   real :: vsnow,vrain,rho
+   call cpu_time(driver_time(1))
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! Read in namelists
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -613,7 +614,10 @@ contains
        ! Allocate
        allocate(frac_ls(nPoints,nLevels),prec_ls(nPoints,nLevels),                       &
                 frac_cv(nPoints,nLevels),prec_cv(nPoints,nLevels))
-       
+
+       open(unit=98, file='../data/my_outputs/Output_subcolumns.csv', status='unknown', action='write', position='append')
+       open(unit=99, file='../data/my_outputs/Output_subcolumns_mratio.csv', status='unknown', action='write', position='append')
+
        ! Initialize
        frac_ls(1:nPoints,1:nLevels) = 0._wp
        prec_ls(1:nPoints,1:nLevels) = 0._wp
@@ -622,12 +626,18 @@ contains
        do j=1,nPoints
           do k=1,nLevels
              do i=1,nColumns
+                jsel=66
+                if (j.eq.jsel) then 
+                if (i.eq.1.and.k.eq.1) write (98,*) "level,column,frac,fracprec" 
+                write (98,*) 1,",",k,",",i,",",cospIN%frac_out(j,i,k),",",frac_prec(j,i,k)    
+                endif
                 if (cospIN%frac_out(j,i,k)  .eq. 1)  frac_ls(j,k) = frac_ls(j,k)+1._wp
                 if (cospIN%frac_out(j,i,k)  .eq. 2)  frac_cv(j,k) = frac_cv(j,k)+1._wp
                 if (frac_prec(j,i,k) .eq. 1)  prec_ls(j,k) = prec_ls(j,k)+1._wp
                 if (frac_prec(j,i,k) .eq. 2)  prec_cv(j,k) = prec_cv(j,k)+1._wp
                 if (frac_prec(j,i,k) .eq. 3)  prec_cv(j,k) = prec_cv(j,k)+1._wp
                 if (frac_prec(j,i,k) .eq. 3)  prec_ls(j,k) = prec_ls(j,k)+1._wp
+
              enddo
              frac_ls(j,k)=frac_ls(j,k)/nColumns
              frac_cv(j,k)=frac_cv(j,k)/nColumns
@@ -651,7 +661,6 @@ contains
        do k=1,nColumns
           ! Subcolumn cloud fraction
           column_frac_out = cospIN%frac_out(:,k,:)
-               
           ! LS clouds
           where (column_frac_out == I_LSC)
              mr_hydro(:,k,:,I_LSCLIQ) = mr_lsliq
@@ -729,10 +738,32 @@ contains
        deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-       ! Convert precipitation fluxes to mixing ratios
+       ! Convert precipitation fluxes to mixing ratios: edited by pg
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+       vsnow=1. !fall speed snow
+       vrain=4. ! rain fall speed
        if (use_precipitation_fluxes) then
-          ! LS rain
+       IF (.TRUE.) THEN
+       do k=1,Nlevels
+            do j=1,Ncolumns
+                do i=1,Npoints
+                  rho = cospstateIN%pfull(i,k)/(287.05_wp*cospstateIN%at(i,k))
+
+                  if ((frac_prec(i,j,k).eq.1._wp).or.(frac_prec(i,j,k).eq.3.)) then
+                    mr_hydro(i,j,k,I_LSSNOW)=fl_lssnow(i,k)/vsnow/rho 
+                    mr_hydro(i,j,k,I_LSRAIN)=fl_lsrain(i,k)/vrain/rho
+                  endif
+
+                  if ((frac_prec(i,j,k).eq.2._wp).or.(frac_prec(i,j,k).eq.3.)) then
+                    mr_hydro(i,j,k,I_CVSNOW)=fl_ccsnow(i,k)/vsnow/rho
+                    mr_hydro(i,j,k,I_CVRAIN)=fl_ccrain(i,k)/vrain/rho
+                  endif 
+                  enddo
+           enddo
+       enddo     
+       endif     
+       if (.FALSE.) then
+        ! LS rain
           call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
                cospstateIN%at, frac_prec, 1._wp, n_ax(I_LSRAIN), n_bx(I_LSRAIN),         &
                alpha_x(I_LSRAIN), c_x(I_LSRAIN),   d_x(I_LSRAIN),   g_x(I_LSRAIN),       &
@@ -767,7 +798,11 @@ contains
                a_x(I_LSGRPL),   b_x(I_LSGRPL),   gamma_1(I_LSGRPL),  gamma_2(I_LSGRPL),  &
                gamma_3(I_LSGRPL), gamma_4(I_LSGRPL), fl_lsgrpl,                          &
                mr_hydro(:,:,:,I_LSGRPL), Reff(:,:,:,I_LSGRPL))
-          deallocate(frac_prec)
+
+       print *, 'after new', mr_hydro(66,95,29,I_LSSNOW)
+       endif
+
+       deallocate(frac_prec)
        endif
 
     else
@@ -776,11 +811,28 @@ contains
                 Np(nPoints,1,nLevels,nHydro))
        mr_hydro(:,1,:,I_LSCLIQ) = mr_lsliq
        mr_hydro(:,1,:,I_LSCICE) = mr_lsice
+
        mr_hydro(:,1,:,I_CVCLIQ) = mr_ccliq
        mr_hydro(:,1,:,I_CVCICE) = mr_ccice
        Reff(:,1,:,:)            = ReffIN
     endif
-    
+      do k=1,nLevels
+      do i=1,nColumns
+      if (i.eq.1.and.k.eq.1) write(99,*)"index,level,column,I_CVCLIQ,I_CVCICE,I_LSCLIQ,I_LSCICE&
+    ,I_CVRAIN,I_CVSNOW,I_LSRAIN,I_LSSNOW,I_LSGRPL,none" 
+    write(99,'(I0, ",", I0, ",", I0, ",", 9(G0, ","))') 2, k, i, &
+         mr_hydro(jsel,i,k,I_CVCLIQ), &
+         mr_hydro(jsel,i,k,I_CVCICE), &
+         mr_hydro(jsel,i,k,I_LSCLIQ), &
+         mr_hydro(jsel,i,k,I_LSCICE), &
+         mr_hydro(jsel,i,k,I_CVRAIN), &
+         mr_hydro(jsel,i,k,I_CVSNOW), &
+         mr_hydro(jsel,i,k,I_LSRAIN), &
+         mr_hydro(jsel,i,k,I_LSSNOW), &
+         mr_hydro(jsel,i,k,I_LSGRPL)
+         enddo
+       enddo
+       
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! 11 micron emissivity
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

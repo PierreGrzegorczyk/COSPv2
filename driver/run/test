@@ -1,0 +1,10 @@
+ after new   0.00000000    
+ after old   6.15549283E-08
+ Time to read in data:        9.76200029E-03
+ Time to initialize:          1.12220012E-02
+ Time to construct types:     2.57998705E-04
+ Time to compute optics:      71.2661972    
+ Time to run COSP:           0.162040710    
+ Total time:                  71.4494781    
+ output file../data/my_outputs/Output.nc                                                                                                                                                                                                                                    
+ Time to write to output:     3.64608765E-02
