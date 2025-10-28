@@ -19,9 +19,6 @@ VPATH += $(SUBCOLS)/optics:$(SUBCOLS)/optics/quickbeam_optics:$(SUBCOLS)/subcol:
 DRIVER = ../driver/src
 VPATH += $(DRIVER)
 
-#HILLMAN
-VPATH += $(SUBCOLS)/Hillman
-
 # Makefile.conf needs to define $(F90), $(F90FLAGS), $(NC_LIB), $(NC_INC)
 include Makefile.conf
 F90FLAGS += $(NC_INC)
@@ -94,11 +91,7 @@ cosp_rttov_interfaceSTUB.o  : cosp_kinds.o cosp_config.o cosp_rttovSTUB.o
 cosp_rttovSTUB.o            : cosp_kinds.o cosp_config.o cosp_constants.o
 
 # Example subcolumn generaton and mapping to optical properties, following COSP 1.4
-SUBCOL_OBJS = mo_rng.o scops.o prec_scops.o cosp_utils.o cosp_optics.o quickbeam_optics.o \
-              array_lib.o math_lib.o mrgrnk.o optics_lib.o cosp_errorHandling.o \
-              gen_subcol.o gen_subcol_cld.o quick_sort.o gen_subcol_var.o adjust_precip.o \
-              init_random_seed.o random.o 
-
+SUBCOL_OBJS = mo_rng.o scops.o prec_scops.o cosp_utils.o cosp_optics.o quickbeam_optics.o array_lib.o math_lib.o mrgrnk.o optics_lib.o cosp_errorHandling.o
 libsubcol.a: $(SUBCOL_OBJS) libcosp.a
 	ar -rvs libsubcol.a $(SUBCOL_OBJS)
 

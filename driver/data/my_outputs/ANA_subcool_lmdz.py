@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ## Output from cosp
-nc_out = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\Output.nc"
+nc_out = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\Output.nc"
 nc_out = Dataset(nc_out, "r")
 z=np.array(nc_out.variables['lev'][:])/1000
 
@@ -26,7 +26,7 @@ z=np.array(nc_out.variables['lev'][:])/1000
 nb_subcol=100
 subcol_grid=1+np.arange(0,100,1)
 ## Cloud
-path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\"
+path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\"
 # path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\old_outputs\\"
 
 Data_sub=pd.read_csv(path+"Output_subcolumns.csv")
@@ -89,7 +89,7 @@ axes = axes.flatten()
 
 for i, (ax, arr, title,label) in enumerate(zip(axes, arrays, titles,labels)):
     if i>2:
-        vmax=0.01
+        vmax=0.03
     else:
         vmax=0.1
     im = ax.pcolormesh(subcol_grid,z,arr*1000,vmax=vmax,vmin=1e-25,cmap="viridis")
@@ -102,4 +102,22 @@ for i, (ax, arr, title,label) in enumerate(zip(axes, arrays, titles,labels)):
 plt.suptitle("Cloud and precip subcolumns", fontsize=14, fontweight='bold')
 plt.tight_layout(rect=[0, 0, 1, 0.95])
 plt.savefig(path+"subgrid_mr.png",dpi=600)
+
+
+
+
+pfrac_test=[0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.334711879,0.355284542,0.357359231,0.358069956,0.357114583,0.355228513,0.353848785,0.352313101,0.317387968,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.880891204,0.899871647,0.899847448,0.772919655,0.760382414,0.884870231,0.780659139,0.300000012,0.775534272,0.351571470,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012,0.300000012]
+
+
+
+
+
+plt.figure('precip fraction profile',figsize=(4,5))
+plt.xlabel('Precipitation fraction in gridbox')
+plt.plot(pfrac_test,z)
+plt.ylabel('Altitude (km)')
+plt.ylim(0,14)
+plt.xlim(0,1)
+plt.tight_layout()
+plt.savefig(path+"Precip_fraction_test_profiles.png",dpi=600)
 plt.show()

@@ -16,10 +16,10 @@ import csv
 path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\"
 plt.rcParams['font.size'] = 13
 ## Input from lmdz
-nc_file = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\inputs\\UKMO\\cosp_input_from_lmdz.nc"
+nc_file = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\inputs\\UKMO\\cosp_input_from_lmdz.nc"
 nc_data = Dataset(nc_file, "r")
 
-output_file = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\cosp_input_um_names.csv"
+output_file = "C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\cosp_input_um_names.csv"
 # Write to CSV
 # Prepare list of (variable_name, standard_name)
 variable_standard_list = []

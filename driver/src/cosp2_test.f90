@@ -20,7 +20,7 @@
 ! EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF 
 ! MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL 
 ! THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, 
-! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
+! SPECI1G/AL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT 
 ! OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS 
 ! INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
 ! LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
@@ -111,7 +111,7 @@ program cosp2_test
        dtau_s,    & ! 0.67micron optical depth (stratiform cloud) (1)
        dtau_c,    & ! 0.67micron optical depth (convective cloud) (1)
        dem_s,     & ! 11micron emissivity (stratiform cloud) 
-       dem_c        ! 11microm emissivity (convective cloud)
+       dem_c       ! 11microm emissivity (convective cloud)
   real(wp),dimension(:,:,:),allocatable,target :: &
        frac_out,  & ! Subcolumn cloud cover (0/1)
        Reff         ! Subcolumn effective radius
@@ -572,7 +572,7 @@ contains
     real(wp),dimension(:,:,:,:),allocatable :: &
          mr_hydro, Reff, Np
     real(wp),dimension(nPoints,nLevels) :: &
-         column_frac_out, column_prec_out, fl_lsrain, fl_lssnow, fl_lsgrpl, fl_ccrain, fl_ccsnow
+    pfrac,  column_frac_out, column_prec_out, fl_lsrain, fl_lssnow, fl_lsgrpl, fl_ccrain, fl_ccsnow
     real(wp),dimension(nPoints,nColumns,Nlvgrid_local) :: tempOut
     logical :: cmpGases=.true.
 
@@ -607,7 +607,25 @@ contains
        allocate(frac_prec(nPoints,nColumns,nLevels))
        call prec_scops(nPoints,nLevels,nColumns,ls_p_rate,cv_p_rate,cospIN%frac_out,frac_prec)
        deallocate(ls_p_rate,cv_p_rate)
-       
+
+
+       !________________precip adjust from Hillman 2018: modified by pg_______________________
+
+       jsel=66
+       do j=1,nPoints
+         do k=1,nLevels
+           call random_number(pfrac(j,k))
+           pfrac(j,k)=0.25+0.25*pfrac(j,k)+0.5*tca(j,k)
+           if (pfrac(j,k).gt.0.9*tca(j,k)) pfrac(j,k)=0.9*tca(j,k)
+           if (pfrac(j,k).lt.0.3) pfrac(j,k)=0.3
+
+           enddo
+       enddo
+
+
+       print *, "precip fraction jsel",pfrac(jsel,:)
+       call adjust_precip(nPoints,nColumns,nLevels,pfrac,cospIN%frac_out,frac_prec,1, 0)
+
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Compute fraction in each gridbox for precipitation  and cloud type.
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -626,7 +644,6 @@ contains
        do j=1,nPoints
           do k=1,nLevels
              do i=1,nColumns
-                jsel=66
                 if (j.eq.jsel) then 
                 if (i.eq.1.and.k.eq.1) write (98,*) "level,column,frac,fracprec" 
                 write (98,*) 1,",",k,",",i,",",cospIN%frac_out(j,i,k),",",frac_prec(j,i,k)    
@@ -735,15 +752,25 @@ contains
              endif
           enddo
        enddo
+       !_______________in cloud mixing ratio variability from Hillman: added by pg_________________________
+
+       print *, 'before genvar', cospIN%frac_out,mr_lsliq
+       call gen_subcol_var(nPoints,nColumns,nLevels,cospIN%frac_out, &
+                          mr_lsliq, mr_hydro(:,:,:,I_LSCICE), 0)
+   
+       !f2py integer, intent(in) :: npts, ncol, nlev
+    !f2py real, intent(in) :: cb(npts, ncol, nlev)
+    !f2py real, intent(in) :: qmean(npts, nlev)
+    !f2py integer, intent(in) :: seed=0
+    !f2py real, intent(out) :: q(npts, ncol, nlev)
        deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Convert precipitation fluxes to mixing ratios: edited by pg
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        vsnow=1. !fall speed snow
-       vrain=4. ! rain fall speed
+       vrain=4. !rain fall speed
        if (use_precipitation_fluxes) then
-       IF (.TRUE.) THEN
        do k=1,Nlevels
             do j=1,Ncolumns
                 do i=1,Npoints
@@ -761,51 +788,9 @@ contains
                   enddo
            enddo
        enddo     
-       endif     
-       if (.FALSE.) then
-        ! LS rain
-          call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
-               cospstateIN%at, frac_prec, 1._wp, n_ax(I_LSRAIN), n_bx(I_LSRAIN),         &
-               alpha_x(I_LSRAIN), c_x(I_LSRAIN),   d_x(I_LSRAIN),   g_x(I_LSRAIN),       &
-               a_x(I_LSRAIN),   b_x(I_LSRAIN),   gamma_1(I_LSRAIN), gamma_2(I_LSRAIN),   &
-               gamma_3(I_LSRAIN), gamma_4(I_LSRAIN), fl_lsrain,                          &
-               mr_hydro(:,:,:,I_LSRAIN), Reff(:,:,:,I_LSRAIN))
-          ! LS snow
-          call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
-               cospstateIN%at, frac_prec, 1._wp,  n_ax(I_LSSNOW),  n_bx(I_LSSNOW),       &
-               alpha_x(I_LSSNOW), c_x(I_LSSNOW),  d_x(I_LSSNOW),  g_x(I_LSSNOW),         &
-               a_x(I_LSSNOW),   b_x(I_LSSNOW),   gamma_1(I_LSSNOW),  gamma_2(I_LSSNOW),  &
-               gamma_3(I_LSSNOW), gamma_4(I_LSSNOW), fl_lssnow,                          &
-               mr_hydro(:,:,:,I_LSSNOW), Reff(:,:,:,I_LSSNOW))
-          ! CV rain
-          call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
-               cospstateIN%at, frac_prec, 2._wp, n_ax(I_CVRAIN),  n_bx(I_CVRAIN),        &
-               alpha_x(I_CVRAIN), c_x(I_CVRAIN),   d_x(I_CVRAIN),   g_x(I_CVRAIN),       &
-               a_x(I_CVRAIN),   b_x(I_CVRAIN),   gamma_1(I_CVRAIN), gamma_2(I_CVRAIN),   &
-               gamma_3(I_CVRAIN), gamma_4(I_CVRAIN), fl_ccrain,                          &
-               mr_hydro(:,:,:,I_CVRAIN), Reff(:,:,:,I_CVRAIN))
-          ! CV snow
-          call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
-               cospstateIN%at, frac_prec, 2._wp, n_ax(I_CVSNOW),  n_bx(I_CVSNOW),        &
-               alpha_x(I_CVSNOW),  c_x(I_CVSNOW),   d_x(I_CVSNOW),   g_x(I_CVSNOW),      &
-               a_x(I_CVSNOW),   b_x(I_CVSNOW),   gamma_1(I_CVSNOW), gamma_2(I_CVSNOW),   &
-               gamma_3(I_CVSNOW), gamma_4(I_CVSNOW), fl_ccsnow,                          &
-               mr_hydro(:,:,:,I_CVSNOW), Reff(:,:,:,I_CVSNOW))
-          ! LS groupel.
-          call cosp_precip_mxratio(nPoints, nLevels, nColumns, cospstateIN%pfull,        &
-               cospstateIN%at, frac_prec, 1._wp, n_ax(I_LSGRPL),  n_bx(I_LSGRPL),        &
-               alpha_x(I_LSGRPL), c_x(I_LSGRPL),   d_x(I_LSGRPL),   g_x(I_LSGRPL),       &
-               a_x(I_LSGRPL),   b_x(I_LSGRPL),   gamma_1(I_LSGRPL),  gamma_2(I_LSGRPL),  &
-               gamma_3(I_LSGRPL), gamma_4(I_LSGRPL), fl_lsgrpl,                          &
-               mr_hydro(:,:,:,I_LSGRPL), Reff(:,:,:,I_LSGRPL))
-
-       print *, 'after new', mr_hydro(66,95,29,I_LSSNOW)
-       endif
-
        deallocate(frac_prec)
        endif
-
-    else
+       else
        cospIN%frac_out(:,:,:) = 1  
        allocate(mr_hydro(nPoints,1,nLevels,nHydro),Reff(nPoints,1,nLevels,nHydro),       &
                 Np(nPoints,1,nLevels,nHydro))
@@ -816,7 +801,9 @@ contains
        mr_hydro(:,1,:,I_CVCICE) = mr_ccice
        Reff(:,1,:,:)            = ReffIN
     endif
-      do k=1,nLevels
+
+
+     do k=1,nLevels
       do i=1,nColumns
       if (i.eq.1.and.k.eq.1) write(99,*)"index,level,column,I_CVCLIQ,I_CVCICE,I_LSCLIQ,I_LSCICE&
     ,I_CVRAIN,I_CVSNOW,I_LSRAIN,I_LSSNOW,I_LSGRPL,none" 
