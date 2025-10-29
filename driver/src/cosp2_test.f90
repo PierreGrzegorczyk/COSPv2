@@ -623,7 +623,7 @@ contains
        enddo
 
 
-       print *, "precip fraction jsel",pfrac(jsel,:)
+       !print *, "precip fraction jsel",pfrac(jsel,:)
        call adjust_precip(nPoints,nColumns,nLevels,pfrac,cospIN%frac_out,frac_prec,1, 0)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -752,11 +752,10 @@ contains
              endif
           enddo
        enddo
-       !_______________in cloud mixing ratio variability from Hillman: added by pg_________________________
+       !_______________in cloud mixing ratio variability from Hillman et al. 2018: added by pg_________________________
 
-       print *, 'before genvar', cospIN%frac_out,mr_lsliq
        call gen_subcol_var(nPoints,nColumns,nLevels,cospIN%frac_out, &
-                          mr_lsliq, mr_hydro(:,:,:,I_LSCICE), 0)
+                          mr_lsice, mr_hydro(:,:,:,I_LSCICE),T,frac_ls, 0)
    
        !f2py integer, intent(in) :: npts, ncol, nlev
     !f2py real, intent(in) :: cb(npts, ncol, nlev)

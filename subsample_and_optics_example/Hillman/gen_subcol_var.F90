@@ -16,7 +16,7 @@
 ! DATE:   12 March 2016
 ! ****************************************************************************
 subroutine gen_subcol_var(npts, ncol, nlev, cb, &
-                          qmean, q, seed)
+                          qmean, q, T,tca, seed)
     !f2py integer, intent(in) :: npts, ncol, nlev
     !f2py real, intent(in) :: cb(npts, ncol, nlev)
     !f2py real, intent(in) :: qmean(npts, nlev) 
@@ -30,7 +30,7 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
     ! inputs
     integer, intent(in) :: npts, ncol, nlev
     real, intent(in) :: cb(npts, ncol, nlev) ! cloudy flag
-    real, intent(in) :: qmean(npts, nlev) ! condensate mean
+    real, intent(in) :: qmean(npts, nlev),T(npts, nlev),tca(npts, nlev) ! condensate mean, temperature and cloud frac
     integer, intent(in) :: seed ! seed for random number generator
 
     ! outputs
@@ -41,14 +41,13 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
     real, dimension(npts, ncol, nlev) :: rn1, rn2, rn3  ! random numbers
     real :: kappa, theta  ! distribution parameters
     integer :: i, j, k, l  ! loop indices
-    integer, parameter :: nsamples = 100
+    integer, parameter :: nsamples = 10000
     real, dimension(nsamples) :: x, cdf  ! sample of variates to build CDF
     integer, dimension(nsamples) :: xi  ! sort indices from cdf
 
     real, dimension(npts, nlev) :: rho ! rank correlation
-
+    real :: sum_var
     rho(:,:)=1.
-
     ! initialize psuedo-random number generator
     if (seed /= 0) then
         print *, 'Initializing random seed from gen_subcol_var'
@@ -84,23 +83,24 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
 
     do i = 1, npts
         do k = 1, nlev
-            ! make sure we have some condensate
-            !if (all(cb(i, :, k) == 0) .or. qmean(i, k) <= 0) then
-            !    cycle
+            if (T(i,nlev+1-k).lt.235.15) then !condition for cirrus scheme activation of LMDZ: added by pg
+                    ! make sure we have some condensate
+            if (all(cb(i, :, k) == 0) .or. qmean(i, k) <= 0) then
+                cycle
             !else if (qmean(i, k) < 1e-15 .or. qvar(i, k) < 1e-15) then
-            !else if (qmean(i, k) <= 0 .or. qvar(i, k) <= 0) then
+            else if (qmean(i, k) <= 0) then
                 !print *, 'WARNING: cloud present, but all condensate zero'
-            !    cycle
-            !else if (isnan(qmean(i, k)) .or. isnan(qvar(i, k))) then
+                cycle
+            else if (isnan(qmean(i, k))) then
                 !print *, 'WARNING: cloud present, but all condensate nan'
-            !    cycle
-            !end if
+                cycle
+            end if
 
             ! calculate distribution parameters from mean and variance
             ! NOTE: obtained via method of moments
-            kappa = 0.92!qmean(i, k) ** 2 / qvar(i, k)
-            !theta = qvar(i, k) / qmean(i, k)
-            theta = qmean(i, k)/(3/4)
+            !____________values for qi gamma distribution of cirrus clouds in Borella 2024.
+            kappa = 4/3
+            theta = qmean(i, k)/tca(i,k)
             if (kappa <= 0 .or. theta <= 0) then
                 print *, 'WARNING: distribution params not calculated'
                 cycle
@@ -122,11 +122,9 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
             ! sort condensate values so cdf above actually corresponds to
             ! the empirical CDF of this sample
 
+            call quick_sort(x, xi)
 
-
-            !print *, 'before pb', x, xi
-            !call quick_sort(x, xi)
-
+            !print *, 'before pb: xi', xi
             ! loop over subcolumns and find value of condensate from sample x 
             ! such that the cdf of the sample x is closest to y(i, j, k)
             do j = 1, ncol
@@ -136,6 +134,15 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
                     q(i, j, k) = 0.0
                 end if
             end do
-        end do
+
+            else 
+
+            do j = 1, ncol
+              if (cb(i, j, k) > 0) then
+                q(i, j, k) = qmean(i, k)/tca(i,k)
+              endif
+            end do
+            endif ! temperature condition added by pg
+       end do
     end do
 end subroutine

@@ -27,6 +27,7 @@ nb_subcol=100
 subcol_grid=1+np.arange(0,100,1)
 ## Cloud
 path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\"
+path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\Most_cloud_and_variability_nsamples1000\\"
 # path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\old_outputs\\"
 
 Data_sub=pd.read_csv(path+"Output_subcolumns.csv")
