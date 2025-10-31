@@ -2,7 +2,7 @@ from netCDF4 import Dataset
 import matplotlib.pylab as plt
 import numpy as np
 import matplotlib
-from mycolorpy import colorlist as mcp
+# from mycolorpy import colorlist as mcp
 from matplotlib import cm
 import matplotlib.colors as colors
 from datetime import datetime
@@ -27,7 +27,7 @@ nb_subcol=100
 subcol_grid=1+np.arange(0,100,1)
 ## Cloud
 path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\"
-path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\Most_cloud_and_variability_nsamples1000\\"
+# path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\data\\my_outputs\\Most_cloud_and_variability_nsamples1000\\"
 # path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz\\driver\\data\\my_outputs\\old_outputs\\"
 
 Data_sub=pd.read_csv(path+"Output_subcolumns.csv")
@@ -121,4 +121,18 @@ plt.ylim(0,14)
 plt.xlim(0,1)
 plt.tight_layout()
 plt.savefig(path+"Precip_fraction_test_profiles.png",dpi=600)
+
+## Full read of subcols
+
+path="C:\\Users\\grzegorczyk\\AWACA\\COSP\\COSPv2.0_lmdz_hillman\\driver\\run"
+nc_file = path+"\\hydro_output.nc"
+nc_data = Dataset(nc_file, "r")
+
+Qi=nc_data['I_LSCICE'][:]
+Ql=nc_data['I_LSCLIQ'][:]
+Qr=nc_data['I_LSRAIN'][:]
+Qs=nc_data['I_LSSNOW'][:]
+
+plt.figure('test')
+plt.imshow(np.mean(Qs[:,:,:]*1000,1))
 plt.show()

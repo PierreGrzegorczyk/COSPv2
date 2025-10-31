@@ -27,8 +27,8 @@
 ! to be written to file
 &COSP_OUTPUT
   !- CloudSat
-  Lcfaddbze94=.true.,
-  Ldbze94=.true.,
+  Lcfaddbze94=.false.,
+  Ldbze94=.false.,
   !- CALIPSO
   Latb532=.false.,
   LcfadLidarsr532=.false.,
@@ -106,10 +106,10 @@
   !- MISR
   LclMISR=.false.,
   !- Use lidar and radar
-  Lclcalipso2=.true.,
-  Lcltlidarradar=.true.,
-  Lcloudsat_tcc=.true.,
-  Lcloudsat_tcc2=.true.,
+  Lclcalipso2=.false.,
+  Lcltlidarradar=.false.,
+  Lcloudsat_tcc=.false.,
+  Lcloudsat_tcc2=.false.,
   !- These are provided for debugging or special purposes
   Lfracout=.true.,
   LlidarBetaMol532=.true.,  
@@ -135,17 +135,17 @@
   !- RTTOV
   Ltbrttov=.false.,
   ! -CLOUDSAT precipitation frequency/occurence diagnostics
-  Lptradarflag0=.true.,
-  Lptradarflag1=.true.,
-  Lptradarflag2=.true.,
-  Lptradarflag3=.true.,
-  Lptradarflag4=.true.,
-  Lptradarflag5=.true.,
-  Lptradarflag6=.true.,
-  Lptradarflag7=.true.,
-  Lptradarflag8=.true.,
-  Lptradarflag9=.true.,
-  Lradarpia=.true.,
+  Lptradarflag0=.false.,
+  Lptradarflag1=.false.,
+  Lptradarflag2=.false.,
+  Lptradarflag3=.false.,
+  Lptradarflag4=.false.,
+  Lptradarflag5=.false.,
+  Lptradarflag6=.false.,
+  Lptradarflag7=.false.,
+  Lptradarflag8=.false.,
+  Lptradarflag9=.false.,
+  Lradarpia=.false.,
   !- CloudSat+MODIS joint diagnostics
   Lwr_occfreq=.false.,
   Lcfodd=.false.

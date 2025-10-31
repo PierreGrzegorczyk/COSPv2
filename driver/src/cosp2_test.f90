@@ -67,7 +67,7 @@ program cosp2_test
   use cosp_optics,         ONLY: cosp_simulator_optics,lidar_optics,modis_optics,         &
                                  modis_optics_partition
   use mod_cosp_stats,      ONLY: COSP_CHANGE_VERTICAL_GRID
-  
+  use netcdf !added by pg 
   implicit none
 
   ! Input/Output driver file control
@@ -284,6 +284,11 @@ program cosp2_test
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% pg data %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
    integer :: jsel
    real :: vsnow,vrain,rho
+   integer :: ncid, ierr
+   integer :: dimid_point, dimid_col, dimid_lev
+   integer :: varid_LSCLIQ, varid_LSCICE, varid_LSRAIN, varid_LSSNOW
+   integer :: dimids(3)
+
    call cpu_time(driver_time(1))
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   ! Read in namelists
@@ -757,11 +762,6 @@ contains
        call gen_subcol_var(nPoints,nColumns,nLevels,cospIN%frac_out, &
                           mr_lsice, mr_hydro(:,:,:,I_LSCICE),T,frac_ls, 0)
    
-       !f2py integer, intent(in) :: npts, ncol, nlev
-    !f2py real, intent(in) :: cb(npts, ncol, nlev)
-    !f2py real, intent(in) :: qmean(npts, nlev)
-    !f2py integer, intent(in) :: seed=0
-    !f2py real, intent(out) :: q(npts, ncol, nlev)
        deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -818,7 +818,39 @@ contains
          mr_hydro(jsel,i,k,I_LSGRPL)
          enddo
        enddo
-       
+    !________________________write mr of hydrometeors_______________________________________
+    ! === Create NetCDF file ===
+    ierr = nf90_create("hydro_output.nc", NF90_CLOBBER, ncid)
+    if (ierr /= nf90_noerr) stop "Error creating NetCDF file for hydrometeors"
+
+    ! === Define dimensions ===
+    ierr = nf90_def_dim(ncid, "point",  nPoints,  dimid_point)
+    ierr = nf90_def_dim(ncid, "column", nColumns, dimid_col)
+    ierr = nf90_def_dim(ncid, "level",  nLevels,  dimid_lev)
+
+    dimids = (/dimid_point, dimid_col, dimid_lev/)
+
+    ! === Define variables ===
+    ierr = nf90_def_var(ncid, "I_LSCLIQ", NF90_REAL, dimids, varid_LSCLIQ)
+    ierr = nf90_def_var(ncid, "I_LSCICE", NF90_REAL, dimids, varid_LSCICE)
+    ierr = nf90_def_var(ncid, "I_LSRAIN", NF90_REAL, dimids, varid_LSRAIN)
+    ierr = nf90_def_var(ncid, "I_LSSNOW", NF90_REAL, dimids, varid_LSSNOW)
+
+    ierr = nf90_enddef(ncid)
+
+    ! === Write data ===
+    ierr = nf90_put_var(ncid, varid_LSCLIQ, mr_hydro(:, :, :, I_LSCLIQ))
+    ierr = nf90_put_var(ncid, varid_LSCICE, mr_hydro(:, :, :, I_LSCICE))
+    ierr = nf90_put_var(ncid, varid_LSRAIN, mr_hydro(:, :, :, I_LSRAIN))
+    ierr = nf90_put_var(ncid, varid_LSSNOW, mr_hydro(:, :, :, I_LSSNOW))
+
+    ! === Close the file ===
+    ierr = nf90_close(ncid)
+    if (ierr == nf90_noerr) then
+       print *, "NetCDF file 'hydro_output.nc' written successfully."
+    else
+       print *, "Error closing NetCDF file."
+    end if
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     ! 11 micron emissivity
     !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
