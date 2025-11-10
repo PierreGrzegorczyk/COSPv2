@@ -134,5 +134,5 @@ Qr=nc_data['I_LSRAIN'][:]
 Qs=nc_data['I_LSSNOW'][:]
 
 plt.figure('test')
-plt.imshow(np.mean(Qs[:,:,:]*1000,1))
+plt.imshow(np.mean(Qi[:,:,:]*1000,1))
 plt.show()
