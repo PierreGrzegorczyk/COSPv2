@@ -820,7 +820,7 @@ contains
        enddo
     !________________________write mr of hydrometeors_______________________________________
     ! === Create NetCDF file ===
-    ierr = nf90_create("hydro_output.nc", NF90_CLOBBER, ncid)
+    ierr = nf90_create("hydro_output_golden_case_v2.nc", NF90_CLOBBER, ncid)
     if (ierr /= nf90_noerr) stop "Error creating NetCDF file for hydrometeors"
 
     ! === Define dimensions ===

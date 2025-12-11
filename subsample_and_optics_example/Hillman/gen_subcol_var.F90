@@ -84,6 +84,7 @@ subroutine gen_subcol_var(npts, ncol, nlev, cb, &
     do i = 1, npts
         do k = 1, nlev
             if (T(i,nlev+1-k).lt.235.15) then !condition for cirrus scheme activation of LMDZ: added by pg
+            !if (T(i,k).lt.235.15) then !condition for cirrus scheme activation of LMDZ: added by pg
                     ! make sure we have some condensate
             if (all(cb(i, :, k) == 0) .or. qmean(i, k) <= 0) then
                 cycle
