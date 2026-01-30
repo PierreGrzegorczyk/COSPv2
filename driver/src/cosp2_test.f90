@@ -97,6 +97,7 @@ program cosp2_test
        sh,        & ! Specific humidity (kg/kg)
        rh,        & ! Relative humidity (1)
        tca,       & ! Total cloud fraction (1)
+       precip_frac,       & ! Total precip fraction (1) added by pg
        cca,       & ! Convective cloud fraction (1) 
        mr_lsliq,  & ! Mass mixing ratio for stratiform cloud liquid (kg/kg)
        mr_lsice,  & ! Mass mixing ratio for stratiform cloud ice (kg/kg)
@@ -313,6 +314,7 @@ program cosp2_test
            sh(Npoints,Nlevels),rh(Npoints,Nlevels),tca(Npoints,Nlevels),                 &
            cca(Npoints,Nlevels),mr_lsliq(Npoints,Nlevels),mr_lsice(Npoints,Nlevels),     &
            mr_ccliq(Npoints,Nlevels),mr_ccice(Npoints,Nlevels),                          &
+           precip_frac(Npoints,Nlevels),                                                 &
            fl_lsrain(Npoints,Nlevels),fl_lssnow(Npoints,Nlevels),                        &
            fl_lsgrpl(Npoints,Nlevels),fl_ccrain(Npoints,Nlevels),                        &
            fl_ccsnow(Npoints,Nlevels),Reff(Npoints,Nlevels,N_HYDRO),                     &
@@ -323,7 +325,8 @@ program cosp2_test
 
   fileIN = trim(dinput)//trim(finput)
   call nc_read_input_file(fileIN,Npoints,Nlevels,N_HYDRO,lon,lat,p,ph,zlev,zlev_half,    &
-                          T,sh,rh,tca,cca,mr_lsliq,mr_lsice,mr_ccliq,mr_ccice,fl_lsrain, &
+                       T,sh,rh,tca,cca,mr_lsliq,mr_lsice,mr_ccliq,mr_ccice,precip_frac,  &
+                          fl_lsrain, &
                           fl_lssnow,fl_lsgrpl,fl_ccrain,fl_ccsnow,Reff,dtau_s,dtau_c,    &
                           dem_s,dem_c,skt,landmask,mr_ozone,u_wind,v_wind,sunlit,        &
                           emsfc_lw,geomode,Nlon,Nlat,surfelev)
@@ -496,7 +499,8 @@ program cosp2_test
      !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
      call subsample_and_optics(nPtsPerIt,nLevels,nColumns,N_HYDRO,overlap,                     &
           use_vgrid,use_precipitation_fluxes,lidar_ice_type,sd,                                &
-          tca(start_idx:end_idx,Nlevels:1:-1),cca(start_idx:end_idx,Nlevels:1:-1),             &
+          tca(start_idx:end_idx,Nlevels:1:-1), precip_frac(start_idx:end_idx,Nlevels:1:-1),    &
+          cca(start_idx:end_idx,Nlevels:1:-1),                                                 &
           fl_lsrain(start_idx:end_idx,Nlevels:1:-1),fl_lssnow(start_idx:end_idx,Nlevels:1:-1), &
           fl_lsgrpl(start_idx:end_idx,Nlevels:1:-1),fl_ccrain(start_idx:end_idx,Nlevels:1:-1), &
           fl_ccsnow(start_idx:end_idx,Nlevels:1:-1),mr_lsliq(start_idx:end_idx,Nlevels:1:-1),  &
@@ -545,14 +549,15 @@ contains
   ! SUBROUTINE subsample_and_optics
   !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%  
   subroutine subsample_and_optics(nPoints, nLevels, nColumns, nHydro, overlap, use_vgrid,   &
-       use_precipitation_fluxes, lidar_ice_type, sd, tca, cca, fl_lsrainIN, fl_lssnowIN,    &
+       use_precipitation_fluxes, lidar_ice_type, sd, tca, precip_frac, &
+       cca, fl_lsrainIN, fl_lssnowIN,    &
        fl_lsgrplIN, fl_ccrainIN, fl_ccsnowIN, mr_lsliq, mr_lsice, mr_ccliq, mr_ccice,       &
        reffIN, dtau_c, dtau_s, dem_c, dem_s, cospstateIN, cospIN)
     ! Inputs
     integer,intent(in) :: nPoints, nLevels, nColumns, nHydro, overlap, lidar_ice_type
     real(wp),intent(in),dimension(nPoints,nLevels) :: tca,cca,mr_lsliq,mr_lsice,mr_ccliq,   &
          mr_ccice,dtau_c,dtau_s,dem_c,dem_s,fl_lsrainIN,fl_lssnowIN,fl_lsgrplIN,fl_ccrainIN,&
-         fl_ccsnowIN
+         fl_ccsnowIN, precip_frac
     real(wp),intent(in),dimension(nPoints,nLevels,nHydro) :: reffIN
     logical,intent(in) :: use_vgrid ! .false.: outputs on model levels
                                     ! .true.:  outputs on evenly-spaced vertical levels.
@@ -616,20 +621,20 @@ contains
 
        !________________precip adjust from Hillman 2018: modified by pg_______________________
 
-       jsel=66
        do j=1,nPoints
          do k=1,nLevels
-           call random_number(pfrac(j,k))
-           pfrac(j,k)=0.25+0.25*pfrac(j,k)+0.5*tca(j,k)
-           if (pfrac(j,k).gt.0.9*tca(j,k)) pfrac(j,k)=0.9*tca(j,k)
-           if (pfrac(j,k).lt.0.3) pfrac(j,k)=0.3
-
+       !    call random_number(pfrac(j,k))
+       !    pfrac(j,k)=0.25+0.25*pfrac(j,k)+0.5*tca(j,k)
+       !    if (pfrac(j,k).gt.0.9*tca(j,k)) pfrac(j,k)=0.9*tca(j,k)
+       !    if (pfrac(j,k).lt.0.3) pfrac(j,k)=0.3
+       !    pfrac(j,k)=0.8*tca(j,k)!precip_frac(j)*tca(j,k)
+            !pfrac(j,k)=precip_frac(j,k)
            enddo
        enddo
 
 
        !print *, "precip fraction jsel",pfrac(jsel,:)
-       call adjust_precip(nPoints,nColumns,nLevels,pfrac,cospIN%frac_out,frac_prec,1, 0)
+       call adjust_precip(nPoints,nColumns,nLevels,precip_frac,cospIN%frac_out,frac_prec,1, 0)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Compute fraction in each gridbox for precipitation  and cloud type.
@@ -640,7 +645,7 @@ contains
 
        open(unit=98, file='../data/my_outputs/Output_subcolumns.csv', status='unknown', action='write', position='append')
        open(unit=99, file='../data/my_outputs/Output_subcolumns_mratio.csv', status='unknown', action='write', position='append')
-
+       jsel=450
        ! Initialize
        frac_ls(1:nPoints,1:nLevels) = 0._wp
        prec_ls(1:nPoints,1:nLevels) = 0._wp
@@ -759,10 +764,10 @@ contains
        enddo
        !_______________in cloud mixing ratio variability from Hillman et al. 2018: added by pg_________________________
 
-       call gen_subcol_var(nPoints,nColumns,nLevels,cospIN%frac_out, &
-                          mr_lsice, mr_hydro(:,:,:,I_LSCICE),T,frac_ls, 0)
+       !call gen_subcol_var(nPoints,nColumns,nLevels,cospIN%frac_out, &
+       !                   mr_lsice, mr_hydro(:,:,:,I_LSCICE),T,frac_ls, 0)
    
-       deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
+       !deallocate(frac_ls,prec_ls,frac_cv,prec_cv)
 
        !%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
        ! Convert precipitation fluxes to mixing ratios: edited by pg
@@ -820,7 +825,7 @@ contains
        enddo
     !________________________write mr of hydrometeors_______________________________________
     ! === Create NetCDF file ===
-    ierr = nf90_create("hydro_output_golden_case_v2.nc", NF90_CLOBBER, ncid)
+    ierr = nf90_create("hydro_output_golden_case_v5.nc", NF90_CLOBBER, ncid)
     if (ierr /= nf90_noerr) stop "Error creating NetCDF file for hydrometeors"
 
     ! === Define dimensions ===

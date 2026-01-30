@@ -11,9 +11,9 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 ## Input for cosp
-path0="/home/grzegorc/AWACA/LMDZ/OUT_golden_case_v2/"
+path0="/home/grzegorc/AWACA/LMDZ/OUT_golden_case_v5/"
 
-Cosp_in=path0+"cosp_input_from_lmdz_golden_case_v2.nc"
+Cosp_in=path0+"cosp_input_from_lmdz_golden_case_v5.nc"
 Cosp_in = Dataset(Cosp_in, "r")
 
 z=np.array(Cosp_in.variables['height'][:])/1000
@@ -21,7 +21,7 @@ time=np.arange(0,0.25*len(Cosp_in.variables['t'][:]),0.25)
 
 
 ## Output from cosp
-nc_out = "/home/grzegorc/AWACA/COSP/COSPv2.0_lmdz_hillman/driver/run/hydro_output_golden_case_v2.nc"
+nc_out = "/home/grzegorc/AWACA/COSP/COSPv2.0_lmdz_hillman_precip/driver/run/hydro_output_golden_case_v5.nc"
 nc_out = Dataset(nc_out, "r")
 
 nb_subcol=100
@@ -78,13 +78,13 @@ cmap.set_under('white')
 
 fig, axes = plt.subplots(2, 2, figsize=(8, 8))
 axes = axes.flatten()
-t=351+50
+t=450
 
 for i, (ax, arr, title,label) in enumerate(zip(axes, arrays, titles,labels)):
     if i>2:
-        vmax=0.03
+        vmax=0.25
     else:
-        vmax=0.1
+        vmax=0.25
     im = ax.pcolormesh(subcol_grid,z[::-1,t],arr[:,:,t]*1000,vmax=vmax,vmin=1e-25,cmap="viridis")
 
     ax.set_title(label[:-8], fontsize=10)
@@ -100,12 +100,12 @@ plt.show()
 #time plot
 fig, axes = plt.subplots(2, 2, figsize=(8, 8))
 axes = axes.flatten()
-col=99
+col=4
 for i, (ax, arr, title,label) in enumerate(zip(axes, arrays, titles,labels)):
     if i>2:
-        vmax=0.03
+        vmax=1.5
     else:
-        vmax=0.1
+        vmax=1.5
     im = ax.pcolormesh(time,z[::-1,t],arr[:,col,:]*1000,vmax=vmax,vmin=1e-25,cmap="viridis")
 
     ax.set_title(label[:-8], fontsize=10)
@@ -117,6 +117,38 @@ plt.suptitle("Cloud and precip subcolumns", fontsize=14, fontweight='bold')
 plt.tight_layout(rect=[0, 0, 1, 0.95])
 # plt.savefig(path+"subgrid_mr.png",dpi=600)
 plt.show()
+
+
+
+
+
+
+
+
+
+
+## investigate extreme values with the nex precip scheme
+
+
+
+plt.figure('test',figsize=(18,8))
+
+plt.subplot(311)
+plt.pcolormesh(np.arange(0,len(z[0,:]),1),z[::-1,t],Cosp_in.variables["tca"][::-1,:],)
+plt.ylim(0,14)
+
+plt.subplot(312)
+plt.pcolormesh(np.arange(0,len(z[0,:]),1),z[::-1,t],Cosp_in.variables["fl_lssnow"][::-1,:]*1000,vmax=1,cmap='jet')
+plt.ylim(0,14)
+
+
+plt.subplot(313)
+plt.pcolormesh(np.arange(0,len(z[0,:]),1),z[::-1,t],np.sum(I_LSSNOW,1)*1000/100,vmax=1,cmap='jet')
+plt.ylim(0,14)
+plt.show()
+
+
+
 
 #
 #
