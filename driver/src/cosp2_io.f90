@@ -39,7 +39,7 @@ contains
     ! Create output file.
     ! ---------------------------------------------------------------------------------------
     status = nf90_create(path=trim(outFileName),cmode = nf90_clobber,ncid=fileID)
-    print *, "output file", outFileName
+    print *, "Classical output file of COSP written: ", outFileName
     if (status .ne. nf90_NoERR) print*,trim(nf90_strerror(status))
 
     ! ---------------------------------------------------------------------------------------
